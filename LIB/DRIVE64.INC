@@ -11,9 +11,9 @@ constant DRIVE64_CMD_ENABLE_CARTROM_WRITES($F0)
 constant DRIVE64_CMD_DISABLE_CARTROM_WRITES($F1)
 
 macro Drive64WaitReady() {
-  li a0,DRIVE64_REG_BASE
+  li t1,DRIVE64_REG_BASE
 {#}WaitReady:
-  lhu t0,DRIVE64_REG_STATUS(a0)
+  lhu t0,DRIVE64_REG_STATUS(t1)
   bnez t0,{#}WaitReady
   nop
 }
@@ -21,9 +21,9 @@ macro Drive64WaitReady() {
 macro Drive64SendCommand(cmd) {
   Drive64WaitReady()
 
-  li a0,DRIVE64_REG_BASE
+  li t1,DRIVE64_REG_BASE
   li t0,{cmd}
-  sw t0,DRIVE64_REG_COMMAND(a0)
+  sw t0,DRIVE64_REG_COMMAND(t1)
 
   Drive64WaitReady()
 }
@@ -31,45 +31,12 @@ macro Drive64SendCommand(cmd) {
 macro Drive64GrabScreenshot(screen_x, screen_y, bytes_per_pixel) {
   Drive64SendCommand(DRIVE64_CMD_ENABLE_CARTROM_WRITES) // Enable writes to ROM area
 
-  lui a0,$A010 // A0 = VRAM Start Offset
-  la a1,$A0100000+(({screen_x}*{screen_y}*{bytes_per_pixel})-4) // A1 = VRAM End Offset
-
-  lui a2,$B100 // A2 = CARTROM upper area
-{#}CopyScreen:
-  lw t0,0(a0)
-  nop
-  sw t0,0(a2) // Writes are buggy (?); need to writes many times to fix it
-  sw t0,0(a2) // TODO: ask marshallh why
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-  sw t0,0(a2)
-
-  addi a2,4
-  bne a0,a1,{#}CopyScreen
-  addi a0,4 // Delay Slot
+  // Use PI DMA to copy the screenshot into cartrom area
+  lui a0,PI_BASE
+  lui t0,$0010 // Start VRAM Start Offset
+  sw t0,PI_DRAM_ADDR(a0)
+  lui t1,$1100 // CARTROM upper area
+  sw t1,PI_CART_ADDR(a0)
+  la t2,$A0100000+(({screen_x}*{screen_y}*{bytes_per_pixel})-4)
+  sw t2,PI_RD_LEN(a0)
 }
