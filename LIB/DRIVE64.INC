@@ -37,6 +37,6 @@ macro Drive64GrabScreenshot(screen_x, screen_y, bytes_per_pixel) {
   sw t0,PI_DRAM_ADDR(a0)
   lui t1,$1100 // CARTROM upper area
   sw t1,PI_CART_ADDR(a0)
-  la t2,$A0100000+(({screen_x}*{screen_y}*{bytes_per_pixel})-4)
+  la t2,$A0100000+(({screen_x}*{screen_y}*{bytes_per_pixel})-1)
   sw t2,PI_RD_LEN(a0)
 }
